@@ -56,12 +56,11 @@ def authenticate_user(email: str, password: str) -> Optional[str]:
         return {'email': user_email, 'token': auth0_token}
 
     # If the user doesn't exist, create a new user in Auth0 and return the JWT token
-    elif auth0_response.status_code == 401 and 'invalid_grant' in auth0_response.json().get('error_description', ''):
+    elif auth0_response.status_code == 403 and 'invalid_grant' in auth0_response.json().get('error', ''):
         # Create a new Auth0 management API client
-        get_token = GetToken(auth0_domain)
-        token = get_token.client_credentials(auth0_client_id, auth0_client_secret,
-                                             f'https://{auth0_domain}/api/v2/')
-        auth0 = Auth0(auth0_domain, token['access_token'])
+        auth0_token = GetToken(auth0_domain).client_credentials(auth0_client_id, auth0_client_secret,
+                                                                f'https://{auth0_domain}/api/v2/')
+        auth0 = Auth0(auth0_domain, token=auth0_token)
 
         # Create a new user in Auth0
         user_metadata = {'signup_method': 'local'}
