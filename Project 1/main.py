@@ -1,6 +1,8 @@
 from typing import Optional
 
 import requests
+from auth0.authentication import GetToken
+from auth0.management import Auth0
 from authlib.jose import jwt
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -14,11 +16,11 @@ class User(BaseModel):
     password: str
 
 
-# Define a function to authenticate the user using Auth0
+# Define a function to authenticate the user using Auth0 and create the user if they don't exist
 def authenticate_user(email: str, password: str) -> Optional[str]:
     # Set the Auth0 parameters
     auth0_domain = 'dev-yf3s0lg5eryzqb8u.us.auth0.com'
-    auth0_audience = 'YOUR_AUTH0_AUDIENCE'
+    auth0_audience = 'https://dev-yf3s0lg5eryzqb8u.us.auth0.com/api/v2/'
     auth0_client_id = 'fW0cnOXSB0XflmXGcD4mvdcLHQc0bzF2'
     auth0_client_secret = 'g__0UWe5sUps8UNlAxUPA7USnB2TA4Y4WMkQywDIaWHhrX26vmC6MqcKhYyzmFce'
 
@@ -38,6 +40,8 @@ def authenticate_user(email: str, password: str) -> Optional[str]:
     # Send the Auth0 API request
     auth0_response = requests.post(auth0_url, data=auth0_data)
 
+    print(auth0_response.json())
+
     # Check if the Auth0 API request was successful
     if auth0_response.status_code == 200:
         # Extract the JWT token from the Auth0 API response
@@ -50,6 +54,28 @@ def authenticate_user(email: str, password: str) -> Optional[str]:
 
         # Return the user email and Auth0 JWT token
         return {'email': user_email, 'token': auth0_token}
+
+    # If the user doesn't exist, create a new user in Auth0 and return the JWT token
+    elif auth0_response.status_code == 401 and 'invalid_grant' in auth0_response.json().get('error_description', ''):
+        # Create a new Auth0 management API client
+        get_token = GetToken(auth0_domain)
+        token = get_token.client_credentials(auth0_client_id, auth0_client_secret,
+                                             f'https://{auth0_domain}/api/v2/')
+        auth0 = Auth0(auth0_domain, token['access_token'])
+
+        # Create a new user in Auth0
+        user_metadata = {'signup_method': 'local'}
+        auth0.users.create({
+            'email': email,
+            'password': password,
+            'connection': 'Username-Password-Authentication',
+            'email_verified': False,
+            'verify_email': True,
+            'user_metadata': user_metadata
+        })
+
+        # Authenticate the user using Auth0
+        return authenticate_user(email, password)
 
     # Raise an exception if the Auth0 API request failed
     else:
