@@ -12,29 +12,27 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(mess
 logger = logging.getLogger(__name__)
 
 # RabbitMQ configurations
-RABBITMQ_URL = os.environ['RABBITMQ_URL']
-RABBITMQ_QUEUE = os.environ['RABBITMQ_QUEUE']
+RABBITMQ_URL = 'amqps://ghtiaznm:nfMSp4UtGzag-qUSjEL3z77lPIr14rpA@gull.rmq.cloudamqp.com/ghtiaznm'
 
 # Avien DB configurations
-AVIEN_DB_HOST = os.environ['AVIEN_DB_HOST']
-AVIEN_DB_PORT = os.environ['AVIEN_DB_PORT']
-AVIEN_DB_NAME = os.environ['AVIEN_DB_NAME']
-AVIEN_DB_USER = os.environ['AVIEN_DB_USER']
-AVIEN_DB_PASSWORD = os.environ['AVIEN_DB_PASSWORD']
+AVIEN_DB_HOST = 'mysql-2356b3c0-cloud-computing-app.aivencloud.com'
+AVIEN_DB_PORT = '24313'
+AVIEN_DB_NAME = 'defaultdb'
+AVIEN_DB_USER = 'avnadmin'
+AVIEN_DB_PASSWORD = 'AVNS_6piYB8BWUXyYQ2Udutn'
 
 # Mailgun configurations
-MAILGUN_API_KEY = os.environ['MAILGUN_API_KEY']
-MAILGUN_DOMAIN = os.environ['MAILGUN_DOMAIN']
-MAILGUN_SENDER = os.environ['MAILGUN_SENDER']
+MAILGUN_API_KEY = 'e8e51d665fd3789aad045b5dc5c7a937-81bd92f8-5cb782a1'
+MAILGUN_DOMAIN = 'https://api.mailgun.net/v3/sandboxd810fa8fbc0944a39c6fb2760433b07d.mailgun.org'
+MAILGUN_SENDER = 'mailgun@sandboxd810fa8fbc0944a39c6fb2760433b07d.mailgun.org'
 
 # S3 configurations
-S3_ACCESS_KEY = os.environ['S3_ACCESS_KEY']
-S3_SECRET_KEY = os.environ['S3_SECRET_KEY']
-S3_REGION_NAME = os.environ['S3_REGION_NAME']
-S3_BUCKET_NAME = os.environ['S3_BUCKET_NAME']
+S3_ACCESS_KEY = '11f00242-2593-4a34-bdb8-c45074b28ccc'
+S3_SECRET_KEY = '95b771c08e979dae3bf7f8ca946fcac7a639d619'
+S3_REGION_NAME = 's3.ir-thr-at1.arvanstorage.ir'
 
 # CodeX service URL
-CODEX_SERVICE_URL = os.environ['CODEX_SERVICE_URL']
+CODEX_SERVICE_URL = 'https://api.codex.jaagrav.in'
 
 # Create a connection to RabbitMQ
 rabbitmq_connection = pika.BlockingConnection(pika.URLParameters(RABBITMQ_URL))
