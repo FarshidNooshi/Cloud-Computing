@@ -5,14 +5,14 @@ import psycopg2
 import requests
 
 # Set up RabbitMQ connection
-cloudamqp_url = 'CLOUDAMQP_URL'
+cloudamqp_url = 'amqps://ghtiaznm:nfMSp4UtGzag-qUSjEL3z77lPIr14rpA@gull.rmq.cloudamqp.com/ghtiaznm'
 params = pika.URLParameters(cloudamqp_url)
 connection = pika.BlockingConnection(params)
 channel = connection.channel()
 channel.queue_declare(queue='file_creation')
 
 # Set up database connection
-db_url = 'DB_URL'
+db_url = 'mysql://avnadmin:AVNS_6piYB8BWUXyYQ2Udutn@mysql-2356b3c0-cloud-computing-app.aivencloud.com:24313/defaultdb?ssl-mode=REQUIRED'
 conn = psycopg2.connect(db_url)
 cursor = conn.cursor()
 
