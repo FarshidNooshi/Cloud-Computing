@@ -1,9 +1,16 @@
-from datetime import datetime, timedelta
+import json
+import uuid
+from datetime import timedelta
 
+import boto3
+import pika
+import pymysql
 from auth0.authentication import GetToken
 from auth0.exceptions import Auth0Error
 from auth0.management import Auth0 as Auth0Management
-from fastapi import FastAPI, Depends, HTTPException
+from botocore.exceptions import ClientError
+from fastapi import Depends, HTTPException, UploadFile, File
+from fastapi import FastAPI
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import jwt
 from passlib.context import CryptContext
@@ -20,11 +27,51 @@ AUTH0_CLIENT_ID = 'h4jdBFP3CTojgeTGlwGkZhS8YMUtt04E'
 AUTH0_CLIENT_SECRET = 'jpvxkR1CGUOk1S6ACDhtqcmcNlLibiZroIAumN14pBbd1PHIkVm7lPYiUzRxz_iL'
 AUTH0_AUDIENCE = 'https://dev-yf3s0lg5eryzqb8u.us.auth0.com/api/v2/'
 
+timeout = 50
+connection = pymysql.connect(
+    charset="utf8mb4",
+    connect_timeout=timeout,
+    cursorclass=pymysql.cursors.DictCursor,
+    db="defaultdb",
+    host="mysql-2356b3c0-cloud-computing-app.aivencloud.com",
+    password="AVNS_6piYB8BWUXyYQ2Udutn",
+    read_timeout=timeout,
+    port=24313,
+    user="avnadmin",
+    write_timeout=timeout,
+)
+
+# S3 Configuration
+S3_ACCESS_KEY = '11f00242-2593-4a34-bdb8-c45074b28ccc'
+S3_SECRET_KEY = '95b771c08e979dae3bf7f8ca946fcac7a639d619'
+S3_REGION_NAME = 's3.ir-thr-at1.arvanstorage.com/'
+S3_BUCKET_NAME = 'cchw1aut'
+
+# RabbitMQ Configuration
+RABBITMQ_URL = 'amqps://ghtiaznm:nfMSp4UtGzag-qUSjEL3z77lPIr14rpA@gull.rmq.cloudamqp.com/ghtiaznm'
+
+# Set up RabbitMQ connection
+params = pika.URLParameters(RABBITMQ_URL)
+params.socket_timeout = 5
+rabbitMQ_connection = pika.BlockingConnection(params)
+channel = rabbitMQ_connection.channel()
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 get_token = GetToken(AUTH0_DOMAIN, client_id=AUTH0_CLIENT_ID, client_secret=AUTH0_CLIENT_SECRET)
 token = get_token.client_credentials(audience=AUTH0_AUDIENCE)['access_token']
 auth0 = Auth0Management(AUTH0_DOMAIN, token)
+
+# Create S3 client
+s3_client = boto3.resource(
+    's3',
+    aws_access_key_id=S3_ACCESS_KEY,
+    aws_secret_access_key=S3_SECRET_KEY,
+    endpoint_url=f'https://{S3_REGION_NAME}'
+)
+
+# Create database connection
+cursor = connection.cursor()
 
 
 def verify_password(plain_password, hashed_password):
@@ -96,3 +143,114 @@ async def create_user(data: dict):
         return {"email": email, "token": token}
     except Auth0Error:
         raise HTTPException(status_code=500, detail="Error creating user")
+
+
+@app.post("/program")
+async def create_program(inputs: str, language: str, file: UploadFile = File(...), token: str = Depends(oauth2_scheme)):
+    file_name = file.filename
+
+    # Verify authentication token and get user email
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = decoded_token["sub"]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    # Save file to S3
+    try:
+        file_content = await file.read()
+        s3_client.Bucket(S3_BUCKET_NAME).put_object(Key=file_name, Body=file_content, ACL='public-read')
+    except ClientError as e:
+        raise HTTPException(status_code=500, detail="Error saving file to S3")
+
+    # Store program info in database
+    try:
+        # Use DBaaS client to connect to Aiven database
+        # Replace with your own Aiven client configuration
+
+        # Store program info in database
+        # Replace with your own database table schema and query
+        cursor.execute(
+            "INSERT INTO uploads (email, inputs, language, enable, file_name) VALUES (%s, %s, %s, %s, %s)",
+            (
+                email, inputs, language, 0, file_name)
+        )
+        connection.commit()
+    except:
+        raise HTTPException(status_code=500, detail="Error storing program info in database")
+
+    return {"message": "Program created successfully"}
+
+
+@app.post("/create_work")
+async def create_work(file_id: int, token: str = Depends(oauth2_scheme)):
+    # Verify authentication token and get user email
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = decoded_token["sub"]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    cursor.execute("SELECT * FROM uploads WHERE id = %s", (file_id,))
+    file_data = cursor.fetchone()
+    if file_data is None:
+        raise HTTPException(status_code=404, detail="File not found")
+
+    if file_data['enable'] == 1:
+        return {"message": "Execution request was not created"}
+
+    # Generate unique ID
+    unique_id = uuid.uuid4().hex
+
+    # Send unique ID to second service using RabbitMQ
+    channel.queue_declare(queue='create_work')
+    channel.basic_publish(
+        exchange='',
+        routing_key='create_work',
+        body=json.dumps({
+            "file_id": file_id,
+            "unique_id": unique_id
+        })
+    )
+    connection.commit()
+
+    return {"message": "Execution request created", "unique_id": unique_id}
+
+
+from datetime import datetime
+
+
+@app.get("/executions")
+async def get_executions(token: str = Depends(oauth2_scheme)):
+    # Verify authentication token and get user email
+    try:
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = decoded_token["sub"]
+    except:
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
+
+    try:
+        cursor.execute(
+            "SELECT u.email, j.job, r.output, j.id as execution_id, u.file_name, r.execution_date, r.status, r.output as output FROM jobs j JOIN uploads u ON j.upload = u.id JOIN results r ON j.id = r.job WHERE u.email = %s",
+            (email,))
+        results = cursor.fetchall()
+        executions = []
+        for result in results:
+            execution = {
+                "execution_id": result["execution_id"],
+                "file_link": f"https://{S3_BUCKET_NAME}.ir.{S3_REGION_NAME}/{result['file_name']}",
+                "request_time": result["execution_date"].strftime("%Y-%m-%d %H:%M:%S"),
+                "status": result["status"]
+            }
+            if result["status"] == "done":
+                execution["result"] = result["output"]
+                execution['error'] = None
+                execution["execution_time"] = result["execution_date"].strftime("%Y-%m-%d %H:%M:%S")
+            else:
+                execution["result"] = None
+                execution['error'] = result['output']
+                execution["execution_time"] = None
+            executions.append(execution)
+        return executions
+    except:
+        return []
