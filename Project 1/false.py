@@ -2,5 +2,5 @@ def increase(x):
     return 2 * x
 
 
-y = int(input())
+y = input()2
 print(increase(y))
