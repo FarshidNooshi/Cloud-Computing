@@ -17,3 +17,16 @@ spec:
           image: farshidnooshi/url-mining
           ports:
             - containerPort: 8000
+          env:
+            - name: VERT_NUMBER
+              value: "8000"
+            - name: CACHE_DURATION_MINUTES
+              value: "5"
+            - name: API_ENDPOINT
+              value: "https://api.rebrandly.com/v1/links"
+            - name: API_KEY
+              value: "fcfe81da02864d3f8b8eee976e714666"
+            - name: REDIS_HOST
+              value: "redis-service"
+            - name: REDIS_PORT
+              value: "6379"
