@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: url-mining-config
+data:
+  app_address: app
+  server_port: "8000"
+  cache_retention_time: "5"
+  api_key: "fcfe81da02864d3f8b8eee976e714666"
+  api_endpoint: "https://api.rebrandly.com/v1/links"
+  redis_host: "redis"
+  redis_port: "6379"
