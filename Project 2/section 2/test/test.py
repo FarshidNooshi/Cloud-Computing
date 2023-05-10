@@ -7,7 +7,7 @@ num_runs = 1000
 pod_usage_count = {}
 
 for _ in range(num_runs):
-    # Execute the cURL command
+    # Execute the cURL command to shorten the URL
     result = subprocess.run(['curl', '-X', 'POST', 'http://localhost/shorten_url',
                              '-H', 'Content-Type: application/json',
                              '-d', '{"longURL": "https://FarshidNooshi.GitHub.io"}'],
