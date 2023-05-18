@@ -15,6 +15,7 @@ for _ in range(num_runs):
 
     # replace the true with True in result.stdout
     result.stdout = result.stdout.replace('true', 'True')
+    result.stdout = result.stdout.replace('false', 'False')
 
     # the stdout type is json, convert it to dict
     dict_result = eval(result.stdout)
