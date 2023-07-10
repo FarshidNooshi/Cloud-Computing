@@ -22,10 +22,10 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 # Auth0 configuration
-AUTH0_DOMAIN = 'dev-yf3s0lg5eryzqb8u.us.auth0.com'
-AUTH0_CLIENT_ID = 'h4jdBFP3CTojgeTGlwGkZhS8YMUtt04E'
-AUTH0_CLIENT_SECRET = 'jpvxkR1CGUOk1S6ACDhtqcmcNlLibiZroIAumN14pBbd1PHIkVm7lPYiUzRxz_iL'
-AUTH0_AUDIENCE = 'https://dev-yf3s0lg5eryzqb8u.us.auth0.com/api/v2/'
+AUTH0_DOMAIN = 'SECRET'
+AUTH0_CLIENT_ID = 'SECRET'
+AUTH0_CLIENT_SECRET = 'SECRET'
+AUTH0_AUDIENCE = 'SECRET'
 
 timeout = 50
 connection = pymysql.connect(
@@ -42,13 +42,13 @@ connection = pymysql.connect(
 )
 
 # S3 Configuration
-S3_ACCESS_KEY = '11f00242-2593-4a34-bdb8-c45074b28ccc'
-S3_SECRET_KEY = '95b771c08e979dae3bf7f8ca946fcac7a639d619'
-S3_REGION_NAME = 's3.ir-thr-at1.arvanstorage.com/'
-S3_BUCKET_NAME = 'cchw1aut'
+S3_ACCESS_KEY = 'SECRET'
+S3_SECRET_KEY = 'SECRET'
+S3_REGION_NAME = 'SECRET'
+S3_BUCKET_NAME = 'SECRET'
 
 # RabbitMQ Configuration
-RABBITMQ_URL = 'amqps://ghtiaznm:nfMSp4UtGzag-qUSjEL3z77lPIr14rpA@gull.rmq.cloudamqp.com/ghtiaznm'
+RABBITMQ_URL = 'SECRET'
 
 # Set up RabbitMQ connection
 params = pika.URLParameters(RABBITMQ_URL)
